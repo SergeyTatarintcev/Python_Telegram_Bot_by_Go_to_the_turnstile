@@ -37,7 +37,7 @@ async def send_reminder(context: CallbackContext):
 # Основная функция
 def main():
     # Вставьте свой токен сюда
-    TOKEN = '7665287249:AAFkiu7s3_PKajwJeUvLbQ7KNZQrvJfH4mw'
+    TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
 
     # Создаем приложение
     application = Application.builder().token(TOKEN).build()

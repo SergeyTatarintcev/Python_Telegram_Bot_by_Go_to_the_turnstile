@@ -1,0 +1,21 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# Логи
+*.log
+cron.log
+
+# Кэш Python
+__pycache__
+*.pyc
+
+# Файлы IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Зависимости
+requirements.txt

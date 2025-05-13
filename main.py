@@ -1,68 +1,53 @@
 import logging
 from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
-# Настройки
-TOKEN = "ТВОЙ_ТОКЕН_ОТ_BOTFATHER"
-CHAT_ID = None
-scheduler = BackgroundScheduler()
-
-# Логирование
+# Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Клавиатура
-keyboard = [
-    ["Напоминать каждые 2 часа"],
-    ["Напоминать каждые 3 часа"],
-    ["Отключить напоминания"]
-]
-reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+# Обработчик команды /start
+async def start(update: Update, context: CallbackContext):
+    keyboard = [['Напоминание каждые 2 часа', 'Напоминание каждые 3 часа'], ['Отключить напоминания']]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text('Выберите режим напоминаний:', reply_markup=reply_markup)
 
-# Напоминалка
-async def send_reminder(context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=CHAT_ID, text="💪 Пора на турник! 💪")
+# Обработчик текстовых сообщений
+async def handle_message(update: Update, context: CallbackContext):
+    user_choice = update.message.text
+    chat_id = update.message.chat_id
 
-# /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID
-    CHAT_ID = update.effective_chat.id
-    await update.message.reply_text(
-        "Привет! Я буду напоминать тебе о турнике. Выбери интервал:",
-        reply_markup=reply_markup
-    )
+    if user_choice == 'Напоминание каждые 2 часа':
+        context.job_queue.run_repeating(send_reminder, interval=7200, first=0, chat_id=chat_id, name=str(chat_id))
+        await update.message.reply_text('Напоминания каждые 2 часа включены!')
+    elif user_choice == 'Напоминание каждые 3 часа':
+        context.job_queue.run_repeating(send_reminder, interval=10800, first=0, chat_id=chat_id, name=str(chat_id))
+        await update.message.reply_text('Напоминания каждые 3 часа включены!')
+    elif user_choice == 'Отключить напоминания':
+        jobs = context.job_queue.get_jobs_by_name(str(chat_id))
+        for job in jobs:
+            job.schedule_removal()
+        await update.message.reply_text('Напоминания отключены.')
 
-# Обработка кнопок
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global CHAT_ID
-    CHAT_ID = update.effective_chat.id
-    text = update.message.text
+# Функция отправки напоминания
+async def send_reminder(context: CallbackContext):
+    job = context.job
+    await context.bot.send_message(job.chat_id, text="Пора сходить на турник!")
 
-    if text == "Напоминать каждые 2 часа":
-        scheduler.remove_all_jobs()
-        scheduler.add_job(send_reminder, IntervalTrigger(hours=2), args=[context])
-        await update.message.reply_text("✅ Буду напоминать каждые 2 часа!")
-
-    elif text == "Напоминать каждые 3 часа":
-        scheduler.remove_all_jobs()
-        scheduler.add_job(send_reminder, IntervalTrigger(hours=3), args=[context])
-        await update.message.reply_text("✅ Буду напоминать каждые 3 часа!")
-
-    elif text == "Отключить напоминания":
-        scheduler.remove_all_jobs()
-        await update.message.reply_text("❌ Напоминания отключены.")
-
-# main
+# Основная функция
 def main():
-    scheduler.start()
-    app = ApplicationBuilder().token(TOKEN).build()
+    # Вставьте свой токен сюда
+    TOKEN = '7665287249:AAFkiu7s3_PKajwJeUvLbQ7KNZQrvJfH4mw'
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+    # Создаем приложение
+    application = Application.builder().token(TOKEN).build()
 
-    app.run_polling()
+    # Регистрация обработчиков
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Запуск бота
+    application.run_polling()
 
 if __name__ == '__main__':
     main()

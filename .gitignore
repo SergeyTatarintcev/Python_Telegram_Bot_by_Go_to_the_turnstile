@@ -17,6 +17,3 @@ __pycache__
 .vscode/
 *.swp
 *.swo
-
-# Зависимости
-requirements.txt

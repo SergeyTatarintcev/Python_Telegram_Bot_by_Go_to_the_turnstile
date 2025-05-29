@@ -1,4 +1,3 @@
-
 import logging
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
@@ -31,10 +30,24 @@ async def handle_message(update: Update, context: CallbackContext):
         job.schedule_removal()
 
     if user_choice == 'Напоминание каждые 2 часа':
-        context.job_queue.run_repeating(reminder_job, interval=7200, first=0, chat_id=chat_id, name=str(chat_id), data={'interval': 2})
+        context.job_queue.run_repeating(
+            reminder_job,
+            interval=7200,
+            first=0,
+            chat_id=chat_id,
+            name=str(chat_id),
+            data={'interval': 2, 'tip_count': 0}
+        )
         await update.message.reply_text('Напоминания каждые 2 часа включены!', reply_markup=reply_markup)
     elif user_choice == 'Напоминание каждые 3 часа':
-        context.job_queue.run_repeating(reminder_job, interval=10800, first=0, chat_id=chat_id, name=str(chat_id), data={'interval': 3})
+        context.job_queue.run_repeating(
+            reminder_job,
+            interval=10800,
+            first=0,
+            chat_id=chat_id,
+            name=str(chat_id),
+            data={'interval': 3, 'tip_count': 0}
+        )
         await update.message.reply_text('Напоминания каждые 3 часа включены!', reply_markup=reply_markup)
     elif user_choice == 'Отключить напоминания':
         await update.message.reply_text('Напоминания отключены.', reply_markup=reply_markup)
@@ -44,16 +57,17 @@ async def reminder_job(context: CallbackContext):
     now = datetime.now().time()
     if time(START_HOUR) <= now <= time(END_HOUR):
         chat_id = context.job.chat_id
-        interval = context.job.data.get('interval', 2)
+        data = context.job.data
 
         await context.bot.send_message(chat_id, text="Пора сходить на турник! 💪")
 
         # Совет от ИИ – раз в 2 напоминания
-        if not hasattr(context.job, "tip_count"):
-            context.job.tip_count = 0
-
-        if context.job.tip_count % 2 == 0:
+        tip_count = data.get('tip_count', 0)
+        if tip_count % 2 == 0:
             tip = await get_ai_tip()
             await context.bot.send_message(chat_id, text=f"💡 Советы по подтягиваниям: {tip}")
 
-        context.job.tip_count += 1
+        # Обновляем счётчик
+        data['tip_count'] = tip_count + 1
+        context.job.data = data  # обновляем data (можно не писать, но для надёжности)
+

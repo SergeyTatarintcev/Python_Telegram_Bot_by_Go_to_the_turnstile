@@ -1,23 +1,29 @@
+import httpx
 import os
-import openai
+
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 async def get_ai_tip():
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-    if not openai.api_key:
-        return "Сегодня главное — не пропустить тренировку!"
-
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Ты — мотивационный тренер по подтягиваниям."},
-                {"role": "user", "content": "Дай интересный совет или факт о подтягиваниях для начинающих."}
-            ],
-            max_tokens=60,
-            temperature=0.7,
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "messages": [
+            {"role": "user", "content": "Дай интересный совет по подтягиваниям или мотивирующий факт для новичков."}
+        ],
+        "max_tokens": 60,
+        "temperature": 0.7,
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30,
         )
-        tip = response.choices[0].message['content'].strip()
-        return tip
-    except Exception as e:
-        print(e)
-        return "Сегодня главное — не пропустить тренировку!"
+        r = response.json()
+        return (
+            r.get("choices", [{}])[0].get("message", {}).get("content", "🤖 Не удалось получить совет.")
+        )

@@ -12,13 +12,22 @@ def get_ai_tip():
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "user", "content": "Дай интересный совет по подтягиваниям или мотивирующий факт для новичков. "
-                                             "Твой ответ будет в формате: 'Совет: <совет>' или 'Факт: <факт>'. Но не более 250 симболов"}
+                {
+                    "role": "user",
+                    "content": (
+                        "Дай интересный совет по подтягиваниям или мотивирующий факт для новичков. "
+                        "Ответь КОРОТКО, максимум 250 символов. Формат: 'Совет: ...' или 'Факт: ...'"
+                    ),
+                }
             ],
-            max_tokens=100,
+            max_tokens=100,  # Оптимально по опыту
             temperature=0.7,
         )
-        return response.choices[0].message.content.strip()
+        tip = response.choices[0].message.content.strip()
+        # Обрезаем до 250 символов, если вдруг OpenAI размахнётся
+        if len(tip) > 250:
+            tip = tip[:247] + "..."
+        return tip
     except Exception as e:
         return f"❌ Ошибка при получении совета от ИИ: {e}"
 

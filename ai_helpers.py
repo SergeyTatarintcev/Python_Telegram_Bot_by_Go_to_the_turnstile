@@ -1,15 +1,15 @@
 from openai import OpenAI
 import os
+from dotenv import load_dotenv
+import asyncio
 
-# Берём ключ из переменной окружения или .env
+load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# Создаём клиента
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-async def get_ai_tip():
+def get_ai_tip():
     try:
-        response = await client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": "Дай интересный совет по подтягиваниям или мотивирующий факт для новичков."}
@@ -17,7 +17,10 @@ async def get_ai_tip():
             max_tokens=60,
             temperature=0.7,
         )
-        # В новой версии OpenAI message находится тут:
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"❌ Ошибка при получении совета от ИИ: {e}"
+
+async def get_ai_tip_async():
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, get_ai_tip)

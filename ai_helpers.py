@@ -12,9 +12,10 @@ def get_ai_tip():
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "user", "content": "Дай интересный совет по подтягиваниям или мотивирующий факт для новичков."}
+                {"role": "user", "content": "Дай интересный совет по подтягиваниям или мотивирующий факт для новичков. "
+                                             "Твой ответ будет в формате: 'Совет: <совет>' или 'Факт: <факт>'. Но не более 250 симболов"}
             ],
-            max_tokens=60,
+            max_tokens=100,
             temperature=0.7,
         )
         return response.choices[0].message.content.strip()

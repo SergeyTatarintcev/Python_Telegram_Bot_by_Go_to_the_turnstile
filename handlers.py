@@ -2,7 +2,7 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CommandHandler, MessageHandler, filters, CallbackContext
 from datetime import datetime, time
-from ai_helpers import get_ai_tip_async  # Импортируем именно async-обёртку
+from ai_helpers import get_ai_tip_async
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ async def handle_message(update: Update, context: CallbackContext):
 
     logger.info(f"[CHOICE] Пользователь {chat_id} выбрал: {user_choice}")
 
-    # Отключаем все старые напоминания для этого пользователя
     jobs = context.job_queue.get_jobs_by_name(str(chat_id))
     if jobs:
         logger.info(f"[REMOVE JOBS] Удаляем старые напоминания для пользователя {chat_id} ({len(jobs)} шт.)")
@@ -67,7 +66,6 @@ async def handle_message(update: Update, context: CallbackContext):
         logger.info(f"[UNKNOWN CHOICE] Пользователь {chat_id} выбрал неизвестную опцию: {user_choice}")
         await update.message.reply_text('Неизвестная команда. Пожалуйста, выберите режим напоминаний.', reply_markup=reply_markup)
 
-# Основная задача-напоминание
 async def reminder_job(context: CallbackContext):
     now = datetime.now().time()
     chat_id = context.job.chat_id
@@ -77,16 +75,13 @@ async def reminder_job(context: CallbackContext):
         logger.info(f"[REMINDER] Отправлено напоминание пользователю {chat_id}")
         await context.bot.send_message(chat_id, text="Пора сходить на турник! 💪")
 
-        # Совет от ИИ – раз в 2 напоминания
         tip_count = data.get('tip_count', 0)
         if tip_count % 2 == 0:
             logger.info(f"[AI TIP] Получаем совет для пользователя {chat_id}")
             tip = await get_ai_tip_async()
             await context.bot.send_message(chat_id, text=f"💡 Советы по подтягиваниям: {tip}")
 
-        # Обновляем счётчик
         data['tip_count'] = tip_count + 1
-        context.job.data = data  # обновляем data (можно не писать, но для надёжности)
+        context.job.data = data
     else:
         logger.info(f"[SILENT HOURS] Напоминание для пользователя {chat_id} не отправлено (ночное время)")
-
